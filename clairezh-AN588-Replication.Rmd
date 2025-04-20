@@ -1,0 +1,54 @@
+---
+title: "clairezh-AN588-replication"
+author: "claire zhang"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+loading in the data:
+```{r}
+f <- "C:/Users/clair/Downloads/DATASET_CARDOSO&OTTONI.csv.csv"
+d <- read.csv(f, header = TRUE, stringsAsFactors = FALSE)
+head(d) # looks fine
+```
+
+## descriptive statistics:
+authors stated that the SCNP capuchins visited the boxes at a mean = 213 visits/day; SD = 55; total individual visits = 1067. the FBV capuchins visited the boxes at a mean = 29 visits/day; SD = 12; total individual visits = 376
+
+partitioning the two populations into separate datasets
+```{r}
+SCNP <- subset(d, POPULATION == "SCNP")
+FBV <- subset(d, POPULATION == "FBV")
+SCNP
+FBV # looks fine!
+```
+
+calculating mean and SD number of visits for the SCNP population:
+```{r}
+sum(SCNP$NUMVISIT)
+mean(SCNP$NUMVISIT)
+sd(SCNP$NUMVISIT)
+```
+
+the total number of visits adds up fine. maybe they made a typo? I don't understand how the dataset I have could possibly turn out a mean of 213 visits/days of presentation.
+
+looking at the FBV population:
+```{r}
+sum(FBV$NUMVISIT)
+mean(FBV$NUMVISIT)
+sd(FBV$NUMVISIT)
+```
+
+okay. well the total doesn't even add up correctly, much less the mean and standard deviation hello? what am I doing wrong, because there's no way THEIR data is just crazy incorrect.
+
+trying the "Mann-Whitney test" they do. They say the Z = -4541, p < 0.0001. I'm honestly not even sure what they're calculating the statistics *of*, but my best guess is that it's comparing the frequency of probe use in the SCNP group vs. the FBV population. also, I'm assuming that the Mann-Whitney test is an unpaired two-sample Wilcoxon test
+
+```{r}
+mw.probes <- wilcox.test(SCNP$PROBE.EVENT, FBV$PROBE.EVENT)
+mw.probes
+```
+
+this doesn't give me enough information, except that the p-value isn't correct if I just use the wilcox.test() function. therefore, I'm going to try calculating it by hand:
