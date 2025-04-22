@@ -47,8 +47,100 @@ okay. well the total doesn't even add up correctly, much less the mean and stand
 trying the "Mann-Whitney test" they do. They say the Z = -4541, p < 0.0001. I'm honestly not even sure what they're calculating the statistics *of*, but my best guess is that it's comparing the frequency of probe use in the SCNP group vs. the FBV population. also, I'm assuming that the Mann-Whitney test is an unpaired two-sample Wilcoxon test
 
 ```{r}
-mw.probes <- wilcox.test(SCNP$PROBE.EVENT, FBV$PROBE.EVENT)
+mw.probes <- wilcox.test(SCNP$PROBE.EVENT, FBV$PROBE.EVENT, paired = FALSE)
 mw.probes
 ```
 
-this doesn't give me enough information, except that the p-value isn't correct if I just use the wilcox.test() function. therefore, I'm going to try calculating it by hand:
+this doesn't give me enough information, except that the p-value isn't correct, so maybe they ran the Mann-Whitney test on something else?
+
+in the table, they list values for length of the direct engagement with the task and the mean time of visits, so I'll try it for that too:
+```{r}
+mw.time <- wilcox.test(SCNP$TIME.VISIT, FBV$TIME.VISIT, paired = FALSE)
+mw.time # p-value = 2.987e-07, which could definitely be the p < 0.0001 value they're talking about
+mw.meantime <- wilcox.test(SCNP$Mean_TIMEVISIT, FBV$Mean_TIMEVISIT, paired = FALSE)
+mw.meantime # okay, this spits out a p-value = 5.623e-06, which could also be the p < 0.0001 value they list
+```
+
+these definitely seem more promising. now I need to figure out the Z-score of -4541, which seems absurd? I wonder if the "Z" is supposed to represent something else. Also, in order to assume a normal distribution, both $n_{1}$ (the SCNP group) and $n_{2}$ (the FBV group) would have to be more than 20, which they aren't. 
+
+Nevertheless, we have to convert the W values the Wilcoxon Rank Sum test spits out into Mann-Whitney U values.
+
+```{r}
+?wilcox.test
+```
+
+R tells me that R's value can also be computed as the number of all pairs (x[i], y[j]) for which y[j] is not greater than x[i], the most common definition of the Mann-Whitney test. To ME, this seems like the W value is also the value of U.
+
+Running into another problem here: 306 and 294 seem like the *larger* of the two U values, so I'll reorder my variables
+```{r}
+mw.time <- wilcox.test(FBV$TIME.VISIT, SCNP$TIME.VISIT, paired = FALSE)
+mw.time
+mw.meantime <- wilcox.test(FBV$Mean_TIMEVISIT, SCNP$Mean_TIMEVISIT, paired = FALSE)
+mw.meantime
+```
+
+there we go! U = 16 when comparing total direct interaction time, and U = 28 when comparing mean time per visit. 
+
+in order to get a Z-value, we *must* assume U is approximately normally distributed. so let's just say it is, even though the sample sizes fall a little bit short.
+
+$$z = \frac{U - \mu_{U}}{\sigma_{U}}$$
+
+where $\mu_{U} = \frac{n_{1}n_{2}}{2}$ and $\sigma_{U} = \sqrt{\frac{n_{1}n_{2}(n_{1}+n_{2}+1)}{12}}$
+
+I'm going to write a function to calculate the Z-score at least, because I need to run two different values (and may have to deal with more later:
+ 
+  * i'm also going to use a continuity correction of 0.5, because the M-W test is categorical and my sample size is small. lol
+```{r}
+mw.z <- function(U, n1, n2, correction = TRUE) {
+  mean_U <- (n1*n2) / 2
+  sd_U <- sqrt((n1*n2*(n1+n2+1))/12)
+  correction <- if (correction) 0.5 else 0
+  z <- (U - mean_U - correction) / sd_U
+  print(z)
+}
+mw.z(16, length(FBV$TIME.VISIT), length(SCNP$TIME.VISIT))
+mw.z(28, length(FBV$Mean_TIMEVISIT), length(SCNP$Mean_TIMEVISIT))
+```
+
+these are terribly close (minus the decimal point). maybe i'll take out the continuity correction:
+```{r}
+mw.z(16, length(FBV$TIME.VISIT), length(SCNP$TIME.VISIT), correction = FALSE)
+mw.z(28, length(FBV$Mean_TIMEVISIT), length(SCNP$Mean_TIMEVISIT), correction = FALSE)
+```
+
+OH MY GOD the Z = -4.540868 is what we're looking for because if you round it to the thousandth it's -4.541 which is the number they state. except (obviously) their value is missing a decimal point but maybe that's just a typo. THANK GOD. okay so they're looking at the difference between the length of direct interaction(s) between the two groups. holyyyy
+
+moving on to recreating figure one and figure two. they are pretty simple bar graphs.
+
+  * as a note, they are only looking males in the SCNP group, so I'll be pruning the data accordingly.
+  * they also removed CIN, presumably because he had 0 probe events despite being in the SCNP group
+```{r}
+library(ggplot2)
+names(SCNP)
+SCNP_males <- subset(SCNP, SEX == "MALE")
+SCNP_males <- SCNP_males[SCNP_males$ID !="CIN", ]
+SCNP_males # checking this
+# now we should be able to plot this pretty easily
+ggplot(data=SCNP_males, aes(x=ID, y=NUMBER.OF.PROBE.TOOLS)) +
+  geom_bar(stat="identity", fill="red", width = 0.5) + labs(y = "no. probe tools") + scale_y_continuous(breaks = seq(0, 100, by = 10), expand=expansion(mult=c(0,0.01)))
+```
+
+this is kind of insane, but I don't like that they're in a different order. so i'm reordering the individuals in the dataset.
+```{r}
+SCNP_males$ID <- factor(SCNP_males$ID, levels = c("TOR", "BEI", "ZAN", "NIC", "ZEN", "CLA", "BLP", "CAP", "LIM", "COR", "VOL", "PAD", "DES"))
+# trying again
+ggplot(data=SCNP_males, aes(x=ID, y=NUMBER.OF.PROBE.TOOLS)) +
+  geom_bar(stat="identity", fill="red", width = 0.5) + labs(y = "no. probe tools") + scale_y_continuous(breaks = seq(0, 100, by = 10), expand=expansion(mult=c(0,0.01)))
+```
+
+this makes the fact that the figures are inaccurate MUCH more noticeable - the researchers' graphs definitely aren't to scale, and it seems to outright plot some values incorrectly?
+
+Figure 2 replication:
+```{r}
+# first, calculating proportions of successful probing:
+SCNP_males$PROBE.SUCCESS <- SCNP_males$SUCCESSFUL/SCNP_males$PROBE.EVENT
+SCNP_males$PROBE.SUCCESS # looks fine
+ggplot(data=SCNP_males, aes(x=ID, y=PROBE.SUCCESS)) +
+  geom_bar(stat="identity", fill="navy", width = 0.5) + labs(y = "proportion of successful probing") + scale_y_continuous(breaks = seq(0, 1.0, by = 0.1), expand = expansion(mult = c(0,0.05))) 
+# i know the intervals could be more accurate, but frankly, i have no idea why they separated 0, 0.3, 0.5, 0.8, and 1.0 in equal intervals visually.
+```
