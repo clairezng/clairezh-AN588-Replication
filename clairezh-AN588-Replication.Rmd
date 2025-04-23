@@ -142,7 +142,7 @@ ggplot(data=SCNP_males, aes(x=ID, y=NUMBER.OF.PROBE.TOOLS)) +
 
 and here is the original Figure 1 from the paper:
 
-![](C:/Users/clair/Pictures/img/Cardoso-Ottoni-2016-Figure1.png){width=70%}
+![**Figure 1.** Number of sticks used by each monkey of the SCNP group. All males; females did not use probes.](img/Cardoso-Ottoni-2016-Figure1.png){width=70%}
 
 
 this makes the fact that the figures are inaccurate MUCH more noticeable - the researchers' graphs definitely aren't to scale, and it seems to outright plot some values incorrectly?
@@ -163,6 +163,6 @@ ggplot(data=SCNP_males, aes(x=ID, y=PROBE.SUCCESS)) +
 
 and here is the original Figure 2:
 
-![](C:/Users/clair/Pictures/img/Cardoso-Ottoni-2016-Figure2.png){width=70%}
+![**Figure 2.** Proportions of successful probing by each monkey of the SCNP group. All males; females did not use probes.](img/Cardoso-Ottoni-2016-Figure2.png){width=70%}
 
 My y-axis intervals aren't entirely accurate, but I can't comprehend why the original figure lists 0, 0.3, 0.5, 0.8, and 1.
