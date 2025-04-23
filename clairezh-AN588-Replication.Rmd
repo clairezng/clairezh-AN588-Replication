@@ -14,6 +14,27 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
+## Background
+Cultural knowledge and traditions may affect individual cognition in wild populations of primates. In this study, the authors compare the performance of two wild populations of bearded capuchin monkeys (*Sapajus libidinosus*) with two distinct tool use repertoires in a novel probing task. Only the population that already exhibited the use of probing tools was able to solve the foraging problem, suggesting that group cultural traditions significantly affect individual problem-solving in these populations.
+
+## Methodology & Analyses
+The researchers studied two populations of bearded capuchin monkeys living in northeastern Brazil:
+
+  1. The Fazenda Boa Vista (FBV) group, which customarily uses stone tools to crack nuts, but not probe tools. (n = 16)
+  
+  2. The Serra da Capivara National Park (SCNP) group, which customarily uses a very broad toolkit, *including* stick probing tools. (n = 23)
+  
+The researchers set up a novel probing task using a transparent box and sugarcane molasses that was only obtainable by inserting a probe through a slit in the top of the box. For this replication, the relevant data they recorded is the following:
+
+  * number of times visited
+  * total length of time visited
+  * average time spent per visit
+  * number of probe events
+  * number of successes
+  * number of probe tools used
+
+## My replication
+
 loading in the data:
 ```{r}
 library(curl)
@@ -35,21 +56,23 @@ FBV # looks okay!
 
 calculating mean and SD number of visits for the SCNP population:
 ```{r}
-sum(SCNP$NUMVISIT)
-mean(SCNP$NUMVISIT)
-sd(SCNP$NUMVISIT)
+SCNPtotal <- sum(SCNP$NUMVISIT)
+SCNPtotal
+SCNPmean <- SCNPtotal/5 # exposed to the boxes for 5 days
+SCNPmean
 ```
 
-the total number of visits adds up fine. maybe they made a typo? I don't understand how the dataset I have could possibly turn out a mean of 213 visits/days of presentation.
+everything looks fine! the mean denotes the total number of visits from all individuals divided by the number of days they were exposed to the box.
 
 looking at the FBV population:
 ```{r}
-sum(FBV$NUMVISIT)
-mean(FBV$NUMVISIT)
-sd(FBV$NUMVISIT)
+FBVtotal <- sum(FBV$NUMVISIT)
+FBVtotal
+FBVmean <- FBVtotal/13
+FBVmean
 ```
 
-okay. well the total doesn't even add up correctly, much less the mean and standard deviation hello? what am I doing wrong, because there's no way THEIR data is just crazy incorrect.
+the total doesn't add up correctly. if it did, their mean and standard deviation would be right (i.e., 376/13)
 
 trying the "Mann-Whitney test" they do. They say the Z = -4541, p < 0.0001. I'm honestly not even sure what they're calculating the statistics *of*, but my best guess is that it's comparing the frequency of probe use in the SCNP group vs. the FBV population. also, I'm assuming that the Mann-Whitney test is an unpaired two-sample Wilcoxon test
 
@@ -68,7 +91,7 @@ mw.meantime <- wilcox.test(SCNP$Mean_TIMEVISIT, FBV$Mean_TIMEVISIT, paired = FAL
 mw.meantime # okay, this spits out a p-value = 5.623e-06, which could also be the p < 0.0001 value they list
 ```
 
-these definitely seem more promising. now I need to figure out the Z-score of -4541, which seems absurd? I wonder if the "Z" is supposed to represent something else. Also, in order to assume a normal distribution, both $n_{1}$ (the SCNP group) and $n_{2}$ (the FBV group) would have to be more than 20, which they aren't. 
+these definitely seem more promising. now I need to figure out the Z-score of -4541, which seems absurd. In order to assume a normal distribution, both $n_{1}$ (the SCNP group) and $n_{2}$ (the FBV group) would have to be more than 20, which they aren't. 
 
 Nevertheless, we have to convert the W values the Wilcoxon Rank Sum test spits out into Mann-Whitney U values.
 
@@ -89,15 +112,15 @@ in order to get a Z-value, we *must* assume U is approximately normally distribu
 
 $$z = \frac{U - \mu_{U}}{\sigma_{U}}$$
 
-where the mean of U $\mu_{U} = \frac{n_{1}n_{2}}{2}$
-and the standard deviation of U $\sigma_{U} = \sqrt{\frac{n_{1}n_{2}(n_{1}+n_{2}+1)}{12}}$
+where the mean of U, $\mu_{U} = \frac{n_{1}n_{2}}{2}$,
+and the standard deviation of U, $\sigma_{U} = \sqrt{\frac{n_{1}n_{2}(n_{1}+n_{2}+1)}{12}}$
 
 
 I'm going to write a function to calculate the Z-score at least, because I need to run two different values (and may have to deal with more later:
 
   * note that I tried to use the qnorm() function to find the Z-score. just trust me that it did not work.
   
-  * i'm also going to use a continuity correction of 0.5, because the M-W test is categorical and my sample size is small. lol
+  * i'm also going to use a continuity correction of 0.5, because the Mann-Whitney U value hypothetically exists in a discrete distribution, we are approximating it to a normal distribution, and my sample size is small.
 ```{r}
 mw.z <- function(U, n1, n2, correction = TRUE) {
   mean_U <- (n1*n2) / 2
@@ -116,7 +139,7 @@ mw.z(16, length(FBV$TIME.VISIT), length(SCNP$TIME.VISIT), correction = FALSE)
 mw.z(28, length(FBV$Mean_TIMEVISIT), length(SCNP$Mean_TIMEVISIT), correction = FALSE)
 ```
 
-OH MY GOD the Z = -4.540868 is what we're looking for because if you round it to the thousandth it's -4.541 which is the number they state. except (obviously) their value is missing a decimal point but maybe that's just a typo. THANK GOD. okay so they're looking at the difference between the length of direct interaction(s) between the two groups. holyyyy
+OH MY GOD the Z = -4.540868 is what we're looking for because if you round it to the thousandth it's -4.541 which is the number they state. except (obviously) their value is missing a decimal point but maybe that's just a typo. THANK GOD. okay so they're looking at the difference between the length of direct interaction(s) between the two groups.
 
 moving on to recreating figure one and figure two. they are pretty simple bar graphs.
 
