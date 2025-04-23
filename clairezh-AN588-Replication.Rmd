@@ -10,13 +10,14 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-![Source: Michael Haslam](C:/Users/clair/Downloads/SCNP-beardedcapuchin-stonedig.jfif)
+![Source: Michael Haslam](img/SCNP-beardedcapuchin-dig.png)
 
 # Introduction
 
 loading in the data:
 ```{r}
-f <- "C:/Users/clair/Downloads/DATASET_CARDOSO&OTTONI.csv.csv"
+library(curl)
+f <- curl("https://raw.githubusercontent.com/clairezng/clairezh-AN588-Replication/main/DATASET_CARDOSO&OTTONI.csv")
 d <- read.csv(f, header = TRUE, stringsAsFactors = FALSE)
 head(d) # looks fine
 ```
@@ -164,5 +165,6 @@ ggplot(data=SCNP_males, aes(x=ID, y=PROBE.SUCCESS)) +
 and here is the original Figure 2:
 
 ![**Figure 2.** Proportions of successful probing by each monkey of the SCNP group. All males; females did not use probes.](img/Cardoso-Ottoni-2016-Figure2.png){width=70%}
+
 
 My y-axis intervals aren't entirely accurate, but I can't comprehend why the original figure lists 0, 0.3, 0.5, 0.8, and 1.
