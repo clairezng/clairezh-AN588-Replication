@@ -1,12 +1,18 @@
 ---
-title: "clairezh-AN588-replication"
-author: "claire zhang"
+title: "Data Replication"
+author: "Claire Zhang"
+date: "May 1, 2025"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+
+![Source: Michael Haslam](C:/Users/clair/Downloads/SCNP-beardedcapuchin-stonedig.jfif)
+
+# Introduction
 
 loading in the data:
 ```{r}
@@ -23,7 +29,7 @@ partitioning the two populations into separate datasets
 SCNP <- subset(d, POPULATION == "SCNP")
 FBV <- subset(d, POPULATION == "FBV")
 SCNP
-FBV # looks fine!
+FBV # looks okay!
 ```
 
 calculating mean and SD number of visits for the SCNP population:
@@ -65,18 +71,15 @@ these definitely seem more promising. now I need to figure out the Z-score of -4
 
 Nevertheless, we have to convert the W values the Wilcoxon Rank Sum test spits out into Mann-Whitney U values.
 
-```{r}
-?wilcox.test
-```
 
 R tells me that R's value can also be computed as the number of all pairs (x[i], y[j]) for which y[j] is not greater than x[i], the most common definition of the Mann-Whitney test. To ME, this seems like the W value is also the value of U.
 
 Running into another problem here: 306 and 294 seem like the *larger* of the two U values, so I'll reorder my variables
 ```{r}
-mw.time <- wilcox.test(FBV$TIME.VISIT, SCNP$TIME.VISIT, paired = FALSE)
-mw.time
-mw.meantime <- wilcox.test(FBV$Mean_TIMEVISIT, SCNP$Mean_TIMEVISIT, paired = FALSE)
-mw.meantime
+mw.time2 <- wilcox.test(FBV$TIME.VISIT, SCNP$TIME.VISIT, paired = FALSE)
+mw.time2
+mw.meantime2 <- wilcox.test(FBV$Mean_TIMEVISIT, SCNP$Mean_TIMEVISIT, paired = FALSE)
+mw.meantime2
 ```
 
 there we go! U = 16 when comparing total direct interaction time, and U = 28 when comparing mean time per visit. 
@@ -85,10 +88,14 @@ in order to get a Z-value, we *must* assume U is approximately normally distribu
 
 $$z = \frac{U - \mu_{U}}{\sigma_{U}}$$
 
-where $\mu_{U} = \frac{n_{1}n_{2}}{2}$ and $\sigma_{U} = \sqrt{\frac{n_{1}n_{2}(n_{1}+n_{2}+1)}{12}}$
+where the mean of U $\mu_{U} = \frac{n_{1}n_{2}}{2}$
+and the standard deviation of U $\sigma_{U} = \sqrt{\frac{n_{1}n_{2}(n_{1}+n_{2}+1)}{12}}$
+
 
 I'm going to write a function to calculate the Z-score at least, because I need to run two different values (and may have to deal with more later:
- 
+
+  * note that I tried to use the qnorm() function to find the Z-score. just trust me that it did not work.
+  
   * i'm also going to use a continuity correction of 0.5, because the M-W test is categorical and my sample size is small. lol
 ```{r}
 mw.z <- function(U, n1, n2, correction = TRUE) {
@@ -120,18 +127,23 @@ names(SCNP)
 SCNP_males <- subset(SCNP, SEX == "MALE")
 SCNP_males <- SCNP_males[SCNP_males$ID !="CIN", ]
 SCNP_males # checking this
-# now we should be able to plot this pretty easily
-ggplot(data=SCNP_males, aes(x=ID, y=NUMBER.OF.PROBE.TOOLS)) +
-  geom_bar(stat="identity", fill="red", width = 0.5) + labs(y = "no. probe tools") + scale_y_continuous(breaks = seq(0, 100, by = 10), expand=expansion(mult=c(0,0.01)))
 ```
 
-this is kind of insane, but I don't like that they're in a different order. so i'm reordering the individuals in the dataset.
+I'm also going to reorder individuals because I want to match the order they're listed in within the paper.
 ```{r}
 SCNP_males$ID <- factor(SCNP_males$ID, levels = c("TOR", "BEI", "ZAN", "NIC", "ZEN", "CLA", "BLP", "CAP", "LIM", "COR", "VOL", "PAD", "DES"))
-# trying again
+# plotting!
 ggplot(data=SCNP_males, aes(x=ID, y=NUMBER.OF.PROBE.TOOLS)) +
-  geom_bar(stat="identity", fill="red", width = 0.5) + labs(y = "no. probe tools") + scale_y_continuous(breaks = seq(0, 100, by = 10), expand=expansion(mult=c(0,0.01)))
+  geom_bar(stat="identity", fill="red", width = 0.5) + 
+  labs(x = element_blank(), y = "no. probe tools", caption = "Figure 1. Number of sticks used by each monkey of the SCNP group.") +
+  theme(plot.caption = element_text(hjust = 0)) +
+  scale_y_continuous(breaks = seq(0, 100, by = 10), expand=expansion(mult=c(0,0.01))) 
 ```
+
+and here is the original Figure 1 from the paper:
+
+![](C:/Users/clair/Pictures/img/Cardoso-Ottoni-2016-Figure1.png){width=70%}
+
 
 this makes the fact that the figures are inaccurate MUCH more noticeable - the researchers' graphs definitely aren't to scale, and it seems to outright plot some values incorrectly?
 
@@ -140,7 +152,17 @@ Figure 2 replication:
 # first, calculating proportions of successful probing:
 SCNP_males$PROBE.SUCCESS <- SCNP_males$SUCCESSFUL/SCNP_males$PROBE.EVENT
 SCNP_males$PROBE.SUCCESS # looks fine
+
+# plotting:
 ggplot(data=SCNP_males, aes(x=ID, y=PROBE.SUCCESS)) +
-  geom_bar(stat="identity", fill="navy", width = 0.5) + labs(y = "proportion of successful probing") + scale_y_continuous(breaks = seq(0, 1.0, by = 0.1), expand = expansion(mult = c(0,0.05))) 
-# i know the intervals could be more accurate, but frankly, i have no idea why they separated 0, 0.3, 0.5, 0.8, and 1.0 in equal intervals visually.
+  geom_bar(stat="identity", fill="navy", width = 0.5) + 
+  labs(x = element_blank(), y = "proportion of successful probing", caption = "Figure 2. Proportions of successful probing by each monkey of the SCNP group.") + 
+  theme(plot.caption = element_text(hjust = 0)) +
+  scale_y_continuous(breaks = seq(0, 1.0, by = 0.2), expand = expansion(mult = c(0,0.05))) 
 ```
+
+and here is the original Figure 2:
+
+![](C:/Users/clair/Pictures/img/Cardoso-Ottoni-2016-Figure2.png){width=70%}
+
+My y-axis intervals aren't entirely accurate, but I can't comprehend why the original figure lists 0, 0.3, 0.5, 0.8, and 1.
