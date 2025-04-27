@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, comment = "##", prompt = TRUE, tidy = TRUE, tidy.opts = list(width.cutoff = 75), fig.path = "img/")
 ```
 
 
@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Background
 Cultural knowledge and traditions may affect individual cognition in wild populations of primates. In this study, the authors compare the performance of two wild populations of bearded capuchin monkeys (*Sapajus libidinosus*) with two distinct tool use repertoires in a novel probing task. Only the population that already exhibited the use of probing tools was able to solve the foraging problem, suggesting that group cultural traditions significantly affect individual problem-solving in these populations.
 
-## Methodology & Analyses
+## Methodology
 The researchers studied two populations of bearded capuchin monkeys living in northeastern Brazil:
 
   1. The Fazenda Boa Vista (FBV) group, which customarily uses stone tools to crack nuts, but not probe tools. (n = 16)
@@ -32,21 +32,39 @@ The researchers set up a novel probing task using a transparent box and sugarcan
   * number of probe events
   * number of successes
   * number of probe tools used
-
+  
 ## My replication
+I will be replicating all the statistical analyses ran in this paper. Most of them are descriptive:
 
-loading in the data:
+  * **mean** and **standard deviation** of the total number of visits for both groups
+  * **mean, standard deviation, median, and range** for the length of direct interaction(s) for both groups
+  
+There is one inferential statistic: 
+
+  * A mystery **Mann-Whitney U test**, otherwise known as a two-sample Wilcoxon rank sum test. More on this later.
+  
+I will also replicate both figures from this paper:
+
+  * a bar graph depicting the number of sticks used per individual
+  * a bar graph depicting proportion of successful probing by each individual
+
+## Preparation
+### Load packages:
 ```{r}
 library(curl)
-f <- curl("https://raw.githubusercontent.com/clairezng/clairezh-AN588-Replication/main/DATASET_CARDOSO&OTTONI.csv")
-d <- read.csv(f, header = TRUE, stringsAsFactors = FALSE)
-head(d) # looks fine
+library(ggplot2)
 ```
 
-## descriptive statistics:
-authors stated that the SCNP capuchins visited the boxes at a mean = 213 visits/day; SD = 55; total individual visits = 1067. the FBV capuchins visited the boxes at a mean = 29 visits/day; SD = 12; total individual visits = 376
+### Loading in the data:
+```{r}
+f <- curl("https://raw.githubusercontent.com/clairezng/clairezh-AN588-Replication/main/DATASET_CARDOSO&OTTONI.csv")
+d <- read.csv(f, header = TRUE, stringsAsFactors = FALSE)
+# checking whether the data loaded correctly
+head(d) # looks fine!
+```
 
-partitioning the two populations into separate datasets
+### Dividing populations
+Before we start, it'll also be helpful to partition the two populations (SCNP & FBV) into separate datasets in r, for ease of calculation later on.
 ```{r}
 SCNP <- subset(d, POPULATION == "SCNP")
 FBV <- subset(d, POPULATION == "FBV")
@@ -54,7 +72,14 @@ SCNP
 FBV # looks okay!
 ```
 
-calculating mean and SD number of visits for the SCNP population:
+
+# Descriptive statistics
+The researchers stated:
+  
+  * SCNP capuchins visited the boxes at a mean = 213 visits/day; SD = 55; total individual visits = 1067. 
+  * FBV capuchins visited the boxes at a mean = 29 visits/day; SD = 12; total individual visits = 376
+
+Calculating mean for SCNP visits:
 ```{r}
 SCNPtotal <- sum(SCNP$NUMVISIT)
 SCNPtotal
@@ -62,28 +87,140 @@ SCNPmean <- SCNPtotal/5 # exposed to the boxes for 5 days
 SCNPmean
 ```
 
-everything looks fine! the mean denotes the total number of visits from all individuals divided by the number of days they were exposed to the box.
+Everything looks fine! The mean denotes the total number of visits from all individuals divided by the number of days they were exposed to the box.
+
+  * do note that I was not able to use the mean() function: the researchers are calculating average *total* visits per day, not average visits per individual. I was puzzled over this for a good amount of time.
+
+Standard deviation is a bit more tricky - because we're calculating average total visits per day, and not average number of visits per individual, the sd() function will not work here.
+  
+  *I'm going to write a sample standard deviation function, but to be quite honest, I'm not sure what to use to calculate the difference from the mean
+```{r}
+sample_sd <- function(x, mean) {
+  n <- length(x)
+  mean_x <- mean
+  sqdiff <- (x - mean_x)^2
+  variance <- sum(sqdiff) / (n-1)
+  sd <- sqrt(variance)
+  return(sd)
+}
+sample_sd(SCNP$NUMVISIT, SCNPmean)
+```
+
+this is definitely not right. **deal with it later**
 
 looking at the FBV population:
 ```{r}
 FBVtotal <- sum(FBV$NUMVISIT)
 FBVtotal
-FBVmean <- FBVtotal/13
-FBVmean
 ```
 
-the total doesn't add up correctly. if it did, their mean and standard deviation would be right (i.e., 376/13)
+immediately, we can see the total number of visits for the FBV group (368) does not match what the researchers say it is (376). I'm choosing to chalk it up to a reduced dataset, but will be calculating the mean and standard deviation with the dataset I have access to.
 
-trying the "Mann-Whitney test" they do. They say the Z = -4541, p < 0.0001. I'm honestly not even sure what they're calculating the statistics *of*, but my best guess is that it's comparing the frequency of probe use in the SCNP group vs. the FBV population. also, I'm assuming that the Mann-Whitney test is an unpaired two-sample Wilcoxon test
+calculating mean:
+```{r}
+FBVmean <- FBVtotal/13
+FBVmean 
+```
+
+If the total visits added up correctly, their mean would be correct (i.e., 376/13 = 28.92)
+
+Running into the same problem with standard deviation: I don't know what values they're pulling from in calculating squared differences, but my method can't be right.
+```{r}
+sample_sd(FBV$NUMVISIT, FBVmean)
+```
+
+Not quite right either. Trying it with the mean they provide:
+```{r}
+sample_sd(FBV$NUMVISIT, 376/13)
+```
+
+
+I struggle to comprehend the purpose of calculating the mean number of visits per day for the entire population, not by individual. I understand that there is a very large difference between the means, but without some kind of statistical comparison between the two, the researchers don't get their intentions across completely.
+
+For time data, the researchers stated the following: "FBV: mean time = 75 s, s.d. = 75 s, median = 48 s, range = 648 s; SCNP: mean time = 156 s, s.d. = 176 s, median = 92 s, range = 1398 s"
+
+Here is what I think that means:
+
+  1. mean time = the average of each individual's *mean time per visit*
+    a. both standard deviation and median will be calculated from individual *mean time per visit* values
+  2. range = the longest *total time visiting* - the shortest *total time visiting* among all individuals in each population
+
+starting with the FBV population:
+```{r}
+mean(FBV$Mean_TIMEVISIT)
+# immediately we have a problem. trying a different method of calculating mean:
+FBVtotal.length <- sum(FBV$TIME.VISIT)
+FBVtotal.visits <- sum(FBV$NUMVISIT)
+FBVmean.visit <- (FBVtotal.length/FBVtotal.visits)
+FBVmean.visit
+```
+
+it seems that instead of pulling from the "mean time per visits" data column, the researchers have instead summed up the total time visiting for every individual and divided it by the total number of visits to find the average length of time per visit.
+
+I suppose standard deviation could potentially be calculated using the mean time per visit of individuals and the mean value we derived earlier?
+```{r}
+sample_sd(FBV$Mean_TIMEVISIT, FBVmean.visit)
+```
+
+this isn't working, so I'm going to re-calculate the "Mean_TIMEVISIT" value by hand, and use that instead:
+```{r}
+FBV$average.visit <- FBV$TIME.VISIT/FBV$NUMVISIT
+# trying again
+sample_sd(FBV$average.visit, FBVmean.visit)
+```
+
+unfortunately, nowhere close to the 75 we're looking for. it's close to the value we already have, so I don't think miscalculation of the mean time value is the issue.
+
+trying median now:
+```{r}
+median(FBV$Mean_TIMEVISIT)
+```
+
+unfortunately, 67 =/ 48. 
+
+range?
+```{r}
+max(FBV$TIME.VISIT)-min(FBV$TIME.VISIT)
+```
+
+that also can't be right. Genuinely, I'm so tired of troubleshooting at this point, I'm tempted to cut out this entire section.
+
+With our experience from the FBV population, hopefully calculating values for the SCNP population will be easier:
+
+mean
+```{r}
+SCNPtotal.length <- sum(SCNP$TIME.VISIT)
+SCNPtotal.visits <- sum(SCNP$NUMVISIT)
+SCNPmean.visit <- (SCNPtotal.length/SCNPtotal.visits)
+SCNPmean.visit
+```
+
+the mean looks right. I'll run through the rest of the statistics, but they will likely continue to be incorrect!
+
+standard deviation, median, range:
+```{r}
+sample_sd(SCNP$Mean_TIMEVISIT, SCNPmean.visit)
+median(SCNP$Mean_TIMEVISIT)
+max(SCNP$TIME.VISIT)-min(SCNP$TIME.VISIT)
+```
+
+all terribly off, as expected. I definitely need to re-examine my methods, I might be messing something up in my code or my data.
+
+
+# Inferential Statistics
+The only reference to the **Mann-Whitney U test** (or Wilcoxon rank-sum test) the researchers conduct is a section of text in Table 1 that states:
+"Mann-Whitney test: *Z* = -4541, *p* < 0.0001, two-tailed."
+
+Because of the lack of description, and the fact that the objective of this paper is to demonstrate different tool use repertoires, my immediate inclination is that the test is being used to evaluate the frequency of probe use, denoted by the "PROBE.EVENT" variable.
 
 ```{r}
 mw.probes <- wilcox.test(SCNP$PROBE.EVENT, FBV$PROBE.EVENT, paired = FALSE)
 mw.probes
 ```
 
-this doesn't give me enough information, except that the p-value isn't correct, so maybe they ran the Mann-Whitney test on something else?
+the p-value here (0.0008902) does not match up with the *p* < 0.0001 they provide, so I need to look at other variables.
 
-in the table, they list values for length of the direct engagement with the task and the mean time of visits, so I'll try it for that too:
+In the table, they list values for length of the direct engagement with the task and the mean time of visits, so I'll try it for that too:
 ```{r}
 mw.time <- wilcox.test(SCNP$TIME.VISIT, FBV$TIME.VISIT, paired = FALSE)
 mw.time # p-value = 2.987e-07, which could definitely be the p < 0.0001 value they're talking about
@@ -91,14 +228,16 @@ mw.meantime <- wilcox.test(SCNP$Mean_TIMEVISIT, FBV$Mean_TIMEVISIT, paired = FAL
 mw.meantime # okay, this spits out a p-value = 5.623e-06, which could also be the p < 0.0001 value they list
 ```
 
-these definitely seem more promising. now I need to figure out the Z-score of -4541, which seems absurd. In order to assume a normal distribution, both $n_{1}$ (the SCNP group) and $n_{2}$ (the FBV group) would have to be more than 20, which they aren't. 
+These definitely seem more promising; both p-values are less than 0.0001. 
 
-Nevertheless, we have to convert the W values the Wilcoxon Rank Sum test spits out into Mann-Whitney U values.
+Next, I need to figure out this Z-score of -4541, which seems impossible to obtain. There are a couple steps to this:
 
+  * Find the Mann-Whitney U values for both tests
+  * From the U values, approximate a Z-score using a normal distribution
 
-R tells me that R's value can also be computed as the number of all pairs (x[i], y[j]) for which y[j] is not greater than x[i], the most common definition of the Mann-Whitney test. To ME, this seems like the W value is also the value of U.
+Luckily, the W values R spits out from the wilcox.test() function are equivalent to the U values. Unluckily, for a reason unknown to me, R has given me the **larger** of the two W (or U) values obtained from the Wilcoxon-Mann-Whitney test.
 
-Running into another problem here: 306 and 294 seem like the *larger* of the two U values, so I'll reorder my variables
+After some finagling, I realized I just need to swap the order of my variables:
 ```{r}
 mw.time2 <- wilcox.test(FBV$TIME.VISIT, SCNP$TIME.VISIT, paired = FALSE)
 mw.time2
@@ -106,7 +245,10 @@ mw.meantime2 <- wilcox.test(FBV$Mean_TIMEVISIT, SCNP$Mean_TIMEVISIT, paired = FA
 mw.meantime2
 ```
 
-there we go! U = 16 when comparing total direct interaction time, and U = 28 when comparing mean time per visit. 
+That looks a lot more reasonable! U = 16 when comparing total interaction time, and U = 28 when comparing mean time per visit.
+
+
+In order to assume a normal distribution, both $n_{1}$ (the SCNP group) and $n_{2}$ (the FBV group) would have to be more than 20, which they aren't. 
 
 in order to get a Z-value, we *must* assume U is approximately normally distributed. so let's just say it is, even though the sample sizes fall a little bit short.
 
