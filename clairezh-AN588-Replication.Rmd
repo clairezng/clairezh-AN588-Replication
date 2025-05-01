@@ -2,13 +2,13 @@
 title: "Data Replication"
 author: "Claire Zhang"
 date: "May 1, 2025"
-output: html_document
+output:
+  rmdformats::robobook
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, comment = "##", prompt = TRUE, tidy = TRUE, tidy.opts = list(width.cutoff = 75), fig.path = "img/")
 ```
-
 
 ![Source: Michael Haslam](img/SCNP-beardedcapuchin-dig.png)
 
@@ -24,20 +24,20 @@ The researchers studied two populations of bearded capuchin monkeys living in no
   
   2. The Serra da Capivara National Park (SCNP) group, which customarily uses a very broad toolkit, *including* stick probing tools. (n = 23)
   
-The researchers set up a novel probing task using a transparent box and sugarcane molasses that was only obtainable by inserting a probe through a slit in the top of the box. For this replication, the relevant data they recorded is the following:
+The researchers set up a novel probing task using a transparent box and sugarcane molasses that was only obtainable by inserting a probe through a slit in the top of the box. For this replication, the relevant data they recorded within the open-access dataset is the following:
 
-  * number of times visited
-  * total length of time visited
-  * average time spent per visit
-  * number of probe events
-  * number of successes
-  * number of probe tools used
+  * Number of times visited
+  * Total length of time visited
+  * Average time spent per visit
+  * Number of probe events
+  * Number of successes
+  * Number of probe tools used
   
 ## My replication
 I will be replicating all the statistical analyses ran in this paper. Most of them are descriptive:
 
-  * **mean** and **standard deviation** of the total number of visits for both groups
-  * **mean, standard deviation, median, and range** for the length of direct interaction(s) for both groups
+  * The **mean** and **standard deviation** of the total number of visits for both groups
+  * The **mean, standard deviation, median, and range** for the length of direct interaction(s) with the task for both groups
   
 There is one inferential statistic: 
 
@@ -45,8 +45,8 @@ There is one inferential statistic:
   
 I will also replicate both figures from this paper:
 
-  * a bar graph depicting the number of sticks used per individual
-  * a bar graph depicting proportion of successful probing by each individual
+  * A bar graph depicting the number of sticks used per individual
+  * A bar graph depicting proportion of successful probing by each individual
 
 ## Preparation
 ### Load packages:
@@ -64,7 +64,7 @@ head(d) # looks fine!
 ```
 
 ### Dividing populations
-Before we start, it'll also be helpful to partition the two populations (SCNP & FBV) into separate datasets in r, for ease of calculation later on.
+Before we start, it'll also be helpful to partition the two populations (SCNP & FBV) into separate datasets in R, for ease of calculation later on.
 ```{r}
 SCNP <- subset(d, POPULATION == "SCNP")
 FBV <- subset(d, POPULATION == "FBV")
@@ -72,14 +72,15 @@ SCNP
 FBV # looks okay!
 ```
 
-
 # Descriptive statistics
+## Number of visits
+
 The researchers stated:
   
   * SCNP capuchins visited the boxes at a mean = 213 visits/day; SD = 55; total individual visits = 1067. 
   * FBV capuchins visited the boxes at a mean = 29 visits/day; SD = 12; total individual visits = 376
 
-Calculating mean for SCNP visits:
+Calculating **mean** for SCNP visits:
 ```{r}
 SCNPtotal <- sum(SCNP$NUMVISIT)
 SCNPtotal
@@ -89,11 +90,11 @@ SCNPmean
 
 Everything looks fine! The mean denotes the total number of visits from all individuals divided by the number of days they were exposed to the box.
 
-  * do note that I was not able to use the mean() function: the researchers are calculating average *total* visits per day, not average visits per individual. I was puzzled over this for a good amount of time.
+  * Do note that I was not able to use the mean() function: the researchers are calculating average *total* visits per day, not average visits per individual. I was puzzled over this for a good amount of time.
 
-Standard deviation is a bit more tricky - because we're calculating average total visits per day, and not average number of visits per individual, the sd() function will not work here.
+**Standard deviation** is a bit more tricky - because we're calculating average total visits per day, and not average number of visits per individual, the sd() function will not work here.
   
-  *I'm going to write a sample standard deviation function, but to be quite honest, I'm not sure what to use to calculate the difference from the mean
+  * I'm going to write a sample standard deviation function, but to be quite honest, I don't think I have the right data to calculate the correct SD.
 ```{r}
 sample_sd <- function(x, mean) {
   n <- length(x)
@@ -106,17 +107,17 @@ sample_sd <- function(x, mean) {
 sample_sd(SCNP$NUMVISIT, SCNPmean)
 ```
 
-this is definitely not right. **deal with it later**
+After messing with this extensively, I've realized the only way I can calculate the correct standard deviation is if I have access to the number of total visits recorded during each day the SCNP group was exposed to the task, which is data the researchers did not include.
 
-looking at the FBV population:
+Looking at the **sum** for the FBV population:
 ```{r}
 FBVtotal <- sum(FBV$NUMVISIT)
 FBVtotal
 ```
 
-immediately, we can see the total number of visits for the FBV group (368) does not match what the researchers say it is (376). I'm choosing to chalk it up to a reduced dataset, but will be calculating the mean and standard deviation with the dataset I have access to.
+Immediately, we can see the total number of visits for the FBV group (368) does not match what the researchers say it is (376). I'm choosing to chalk it up to a reduced dataset, but will be calculating the mean and standard deviation with the dataset I have access to.
 
-calculating mean:
+Calculating **mean**:
 ```{r}
 FBVmean <- FBVtotal/13
 FBVmean 
@@ -124,70 +125,73 @@ FBVmean
 
 If the total visits added up correctly, their mean would be correct (i.e., 376/13 = 28.92)
 
-Running into the same problem with standard deviation: I don't know what values they're pulling from in calculating squared differences, but my method can't be right.
+Running into the same issue for **standard deviation**: I don't have access to the *actual* number of visits per day for the FBV population, so I can't replicate their number.
 ```{r}
 sample_sd(FBV$NUMVISIT, FBVmean)
 ```
 
-Not quite right either. Trying it with the mean they provide:
-```{r}
-sample_sd(FBV$NUMVISIT, 376/13)
-```
+I struggle to comprehend the purpose of calculating the mean number of visits per day for the entire population, not by individual. I understand that there is a very large difference between the means, but without some kind of statistical comparison between the two, I'm afraid it's not entirely effective. 
 
-
-I struggle to comprehend the purpose of calculating the mean number of visits per day for the entire population, not by individual. I understand that there is a very large difference between the means, but without some kind of statistical comparison between the two, the researchers don't get their intentions across completely.
+## Time spent visiting
 
 For time data, the researchers stated the following: "FBV: mean time = 75 s, s.d. = 75 s, median = 48 s, range = 648 s; SCNP: mean time = 156 s, s.d. = 176 s, median = 92 s, range = 1398 s"
 
 Here is what I think that means:
 
-  1. mean time = the average of each individual's *mean time per visit*
-    a. both standard deviation and median will be calculated from individual *mean time per visit* values
-  2. range = the longest *total time visiting* - the shortest *total time visiting* among all individuals in each population
+**Mean time** = the average of each individual's *mean time per visit*
+   
+   * Both standard deviation and median will be calculated from individual *mean time per visit* values
+ 
+**Range** = the longest *total time visiting* - the shortest *total time visiting* among all individuals in each population
+  
+*(Spoiler alert: I'm very incorrect in these assumptions!)*
 
-starting with the FBV population:
+Starting with the **mean** for the FBV population:
 ```{r}
 mean(FBV$Mean_TIMEVISIT)
-# immediately we have a problem. trying a different method of calculating mean:
+```
+
+Immediately, I can tell this isn't how the researchers calculated the mean. Trying a different method:
+```{r}
 FBVtotal.length <- sum(FBV$TIME.VISIT)
 FBVtotal.visits <- sum(FBV$NUMVISIT)
 FBVmean.visit <- (FBVtotal.length/FBVtotal.visits)
 FBVmean.visit
 ```
 
-it seems that instead of pulling from the "mean time per visits" data column, the researchers have instead summed up the total time visiting for every individual and divided it by the total number of visits to find the average length of time per visit.
+It seems that instead of pulling from the "mean time per visits" data column, the researchers have instead summed up the total time visiting for every individual and divided it by the total number of visits to find the average length of time per visit.
 
-I suppose standard deviation could potentially be calculated using the mean time per visit of individuals and the mean value we derived earlier?
+I suppose **standard deviation** could potentially be calculated using the mean time per visit of individuals and the mean value we derived earlier?
 ```{r}
 sample_sd(FBV$Mean_TIMEVISIT, FBVmean.visit)
 ```
 
-this isn't working, so I'm going to re-calculate the "Mean_TIMEVISIT" value by hand, and use that instead:
+This isn't working, so I'm going to re-calculate the "Mean_TIMEVISIT" value by hand, and use that instead. I don't think it'll make much of a difference, but it's worth a try:
 ```{r}
 FBV$average.visit <- FBV$TIME.VISIT/FBV$NUMVISIT
 # trying again
 sample_sd(FBV$average.visit, FBVmean.visit)
 ```
 
-unfortunately, nowhere close to the 75 we're looking for. it's close to the value we already have, so I don't think miscalculation of the mean time value is the issue.
+Unfortunately, nowhere close to the 75 we're looking for. it's close to the value we already have, so I don't think miscalculation of the mean time value is the issue. Once again, because I don't have access to the data denoting the length of *each* visit, I'm unable to calculate SD.
 
-trying median now:
+Trying **median** now:
 ```{r}
 median(FBV$Mean_TIMEVISIT)
 ```
 
-unfortunately, 67 =/ 48. 
+The reduced dataset poses the same issue here.
 
-range?
+Calculating **range**:
 ```{r}
 max(FBV$TIME.VISIT)-min(FBV$TIME.VISIT)
 ```
 
-that also can't be right. Genuinely, I'm so tired of troubleshooting at this point, I'm tempted to cut out this entire section.
+This clearly is incorrect - I suspect it's the range of times spent on each individual visit, which I don't have access to.
 
 With our experience from the FBV population, hopefully calculating values for the SCNP population will be easier:
 
-mean
+**Mean**:
 ```{r}
 SCNPtotal.length <- sum(SCNP$TIME.VISIT)
 SCNPtotal.visits <- sum(SCNP$NUMVISIT)
@@ -195,32 +199,30 @@ SCNPmean.visit <- (SCNPtotal.length/SCNPtotal.visits)
 SCNPmean.visit
 ```
 
-the mean looks right. I'll run through the rest of the statistics, but they will likely continue to be incorrect!
+The mean looks right. I'll run through the rest of the descriptive statistics for the SCNP group, but they're incorrect for the same reasons as before.
 
-standard deviation, median, range:
+**Standard deviation, median, range**:
 ```{r}
 sample_sd(SCNP$Mean_TIMEVISIT, SCNPmean.visit)
 median(SCNP$Mean_TIMEVISIT)
 max(SCNP$TIME.VISIT)-min(SCNP$TIME.VISIT)
 ```
 
-all terribly off, as expected. I definitely need to re-examine my methods, I might be messing something up in my code or my data.
-
-
 # Inferential Statistics
+## The Mann-Whitney U Test
 The only reference to the **Mann-Whitney U test** (or Wilcoxon rank-sum test) the researchers conduct is a section of text in Table 1 that states:
 "Mann-Whitney test: *Z* = -4541, *p* < 0.0001, two-tailed."
 
 Because of the lack of description, and the fact that the objective of this paper is to demonstrate different tool use repertoires, my immediate inclination is that the test is being used to evaluate the frequency of probe use, denoted by the "PROBE.EVENT" variable.
 
 ```{r}
-mw.probes <- wilcox.test(SCNP$PROBE.EVENT, FBV$PROBE.EVENT, paired = FALSE)
+mw.probes <- wilcox.test(SCNP$PROBE.EVENT, FBV$PROBE.EVENT, paired = FALSE) # using the wilcox.test() function
 mw.probes
 ```
 
-the p-value here (0.0008902) does not match up with the *p* < 0.0001 they provide, so I need to look at other variables.
+The p-value here (0.0008902) does not match up with the *p* < 0.0001 they provide, so I need to look at other variables.
 
-In the table, they list values for length of the direct engagement with the task and the mean time of visits, so I'll try it for that too:
+In the table, they list values for length of the direct engagement with the task ("TIME.VISIT") and the mean time of visits ("Mean_TIMEVISIT"), so I'll try it for that too:
 ```{r}
 mw.time <- wilcox.test(SCNP$TIME.VISIT, FBV$TIME.VISIT, paired = FALSE)
 mw.time # p-value = 2.987e-07, which could definitely be the p < 0.0001 value they're talking about
@@ -230,14 +232,15 @@ mw.meantime # okay, this spits out a p-value = 5.623e-06, which could also be th
 
 These definitely seem more promising; both p-values are less than 0.0001. 
 
-Next, I need to figure out this Z-score of -4541, which seems impossible to obtain. There are a couple steps to this:
+### Finding Z-score
+Next, I need to figure out this Z-score of -4541, which seems very far out of the range of possible Z values. There are a couple steps to this:
 
   * Find the Mann-Whitney U values for both tests
   * From the U values, approximate a Z-score using a normal distribution
 
-Luckily, the W values R spits out from the wilcox.test() function are equivalent to the U values. Unluckily, for a reason unknown to me, R has given me the **larger** of the two W (or U) values obtained from the Wilcoxon-Mann-Whitney test.
+Luckily, the W values R spits out from the wilcox.test() function are equivalent to the U values. Unluckily, for a reason unknown to me, R has given me the *larger* of the two W (or U) values obtained from the Wilcoxon-Mann-Whitney test.
 
-After some finagling, I realized I just need to swap the order of my variables:
+After some finagling, I realized I just need to swap the order of my variables. Using the SCNP population - which has significantly higher values - as the reference level x[i] returns a higher W value, as R computes U as "the number of all pairs (x[i], y[j]) for which y[j] is not greater than x[i].
 ```{r}
 mw.time2 <- wilcox.test(FBV$TIME.VISIT, SCNP$TIME.VISIT, paired = FALSE)
 mw.time2
@@ -245,60 +248,71 @@ mw.meantime2 <- wilcox.test(FBV$Mean_TIMEVISIT, SCNP$Mean_TIMEVISIT, paired = FA
 mw.meantime2
 ```
 
-That looks a lot more reasonable! U = 16 when comparing total interaction time, and U = 28 when comparing mean time per visit.
+That looks a lot more reasonable! **U = 16** when comparing total interaction time, and **U = 28** when comparing mean time per visit.
 
+There's conflict in the literature about at what sample size the distribution of the U-statistic can be assumed to be approximately normal:
 
-In order to assume a normal distribution, both $n_{1}$ (the SCNP group) and $n_{2}$ (the FBV group) would have to be more than 20, which they aren't. 
+Assuming $n_{1}$ represents the smaller of the two independent samples, and $n_{2}$ represents the larger, Sidney Siegel states in *Nonparametric Statistics for the Behavioral Sciences*:
 
-in order to get a Z-value, we *must* assume U is approximately normally distributed. so let's just say it is, even though the sample sizes fall a little bit short.
+  > As $n_{1}$ and $n_{2}$ increase in size, the sampling distribution of *U* rapidly approaches the normal distribution ... That is, when $n_{2}$ > 20 we may determine the significance of an observed value of *U* by [calculating the Z-score] which is practically normally distributed (1956).
+  
+In our dataset, $n_{2}$ = 23, meaning we can approximate the normal distribution under this parameter. However, the difference between the two sample sizes should be considered when determining whether to assume normality. 
+
+Regardless, because the researchers provide a Z-score, this is how we would calculate it:
 
 $$z = \frac{U - \mu_{U}}{\sigma_{U}}$$
 
-where the mean of U, $\mu_{U} = \frac{n_{1}n_{2}}{2}$,
+Where the mean of U, $\mu_{U} = \frac{n_{1}n_{2}}{2}$
+
 and the standard deviation of U, $\sigma_{U} = \sqrt{\frac{n_{1}n_{2}(n_{1}+n_{2}+1)}{12}}$
 
+I'm going to write a function to calculate the Z-score at least, because I need to run two different values (and may have to deal with more later):
 
-I'm going to write a function to calculate the Z-score at least, because I need to run two different values (and may have to deal with more later:
-
-  * note that I tried to use the qnorm() function to find the Z-score. just trust me that it did not work.
+  * Note that I tried to use the qnorm() function to find the Z-score. Just trust me that it did not work.
   
-  * i'm also going to use a continuity correction of 0.5, because the Mann-Whitney U value hypothetically exists in a discrete distribution, we are approximating it to a normal distribution, and my sample size is small.
+  * I'm also going to use a continuity correction of 0.5, because the Mann-Whitney U value hypothetically exists in a discrete distribution and we are approximating it to a continuous one (the normal distribution). Additionally, my sample size is relatively small.
 ```{r}
 mw.z <- function(U, n1, n2, correction = TRUE) {
   mean_U <- (n1*n2) / 2
   sd_U <- sqrt((n1*n2*(n1+n2+1))/12)
   correction <- if (correction) 0.5 else 0
-  z <- (U - mean_U - correction) / sd_U
+  z <- (U - mean_U + correction) / sd_U # because U < mean_U, applying a correction of +0.5
   print(z)
 }
 mw.z(16, length(FBV$TIME.VISIT), length(SCNP$TIME.VISIT))
 mw.z(28, length(FBV$Mean_TIMEVISIT), length(SCNP$Mean_TIMEVISIT))
 ```
 
-these are terribly close (minus the decimal point). maybe i'll take out the continuity correction:
+These are very close to the value from the paper (minus the decimal point). Maybe I'll take out the continuity correction:
 ```{r}
 mw.z(16, length(FBV$TIME.VISIT), length(SCNP$TIME.VISIT), correction = FALSE)
 mw.z(28, length(FBV$Mean_TIMEVISIT), length(SCNP$Mean_TIMEVISIT), correction = FALSE)
 ```
 
-OH MY GOD the Z = -4.540868 is what we're looking for because if you round it to the thousandth it's -4.541 which is the number they state. except (obviously) their value is missing a decimal point but maybe that's just a typo. THANK GOD. okay so they're looking at the difference between the length of direct interaction(s) between the two groups.
+I think **Z = -4.540868** is what we're looking for. If you round it to the thousandth, *Z* = -4.541, which matches up with the *Z* = -4541 the researchers state in the paper, if we ignore the missing decimal point. I'm choosing to assume that's a typo in the text, meaning the mystery Wilcoxon-Mann-Whitney test they conduct is looking at the difference between the total length of direct interaction(s) between the FBV and SCNP populations.
 
-moving on to recreating figure one and figure two. they are pretty simple bar graphs.
+Apart from the glaring typo, I don't understand why the Z-score approximation was necessary; providing the U or W statistic, p-value, and type of test (i.e., two-tailed) is perfectly sufficient to portray the significance of their results, as well as ensure replicability. Additionally, although not crucial to demonstrate the significance, I found it odd that the researchers didn't apply a continuity correction when approximating to a normal distribution.
 
-  * as a note, they are only looking males in the SCNP group, so I'll be pruning the data accordingly.
-  * they also removed CIN, presumably because he had 0 probe events despite being in the SCNP group
+# Recreating Figures
+
+Moving on to recreating **Figure One** and **Figure Two**. They are pretty simple bar graphs.
+
+  * As a note, they are only looking males in the SCNP group, so I'll be pruning the data accordingly.
+  * They also removed the individual "CIN", presumably because he had 0 probe events despite being in the SCNP group
 ```{r}
-library(ggplot2)
 names(SCNP)
-SCNP_males <- subset(SCNP, SEX == "MALE")
-SCNP_males <- SCNP_males[SCNP_males$ID !="CIN", ]
+SCNP_males <- subset(SCNP, SEX == "MALE") # narrowing data down to only males
+SCNP_males <- SCNP_males[SCNP_males$ID !="CIN", ] # removing CIN
 SCNP_males # checking this
 ```
 
 I'm also going to reorder individuals because I want to match the order they're listed in within the paper.
 ```{r}
 SCNP_males$ID <- factor(SCNP_males$ID, levels = c("TOR", "BEI", "ZAN", "NIC", "ZEN", "CLA", "BLP", "CAP", "LIM", "COR", "VOL", "PAD", "DES"))
-# plotting!
+```
+
+## Figure 1 
+```{r}
 ggplot(data=SCNP_males, aes(x=ID, y=NUMBER.OF.PROBE.TOOLS)) +
   geom_bar(stat="identity", fill="red", width = 0.5) + 
   labs(x = element_blank(), y = "no. probe tools", caption = "Figure 1. Number of sticks used by each monkey of the SCNP group.") +
@@ -306,20 +320,22 @@ ggplot(data=SCNP_males, aes(x=ID, y=NUMBER.OF.PROBE.TOOLS)) +
   scale_y_continuous(breaks = seq(0, 100, by = 10), expand=expansion(mult=c(0,0.01))) 
 ```
 
-and here is the original Figure 1 from the paper:
+And here is the original Figure 1 from the paper:
 
-![**Figure 1.** Number of sticks used by each monkey of the SCNP group. All males; females did not use probes.](img/Cardoso-Ottoni-2016-Figure1.png){width=70%}
+![](img/Cardoso-Ottoni-2016-Figure1.png)
 
+This makes the fact that the figures are inaccurate MUCH more noticeable - the researchers' graphs definitely aren't to scale, and it seems to outright plot some values incorrectly? For example, the individual "DES" used 12 probe tools, and the bar for him sits well under 10. Personally, I also would've kept a label for the x-axis.
 
-this makes the fact that the figures are inaccurate MUCH more noticeable - the researchers' graphs definitely aren't to scale, and it seems to outright plot some values incorrectly?
+## Figure 2
 
-Figure 2 replication:
+First, I have to calculate the proportion of successful probing events for each individual:
 ```{r}
-# first, calculating proportions of successful probing:
 SCNP_males$PROBE.SUCCESS <- SCNP_males$SUCCESSFUL/SCNP_males$PROBE.EVENT
 SCNP_males$PROBE.SUCCESS # looks fine
+```
 
-# plotting:
+Moving onto plotting:
+```{r}
 ggplot(data=SCNP_males, aes(x=ID, y=PROBE.SUCCESS)) +
   geom_bar(stat="identity", fill="navy", width = 0.5) + 
   labs(x = element_blank(), y = "proportion of successful probing", caption = "Figure 2. Proportions of successful probing by each monkey of the SCNP group.") + 
@@ -327,9 +343,19 @@ ggplot(data=SCNP_males, aes(x=ID, y=PROBE.SUCCESS)) +
   scale_y_continuous(breaks = seq(0, 1.0, by = 0.2), expand = expansion(mult = c(0,0.05))) 
 ```
 
-and here is the original Figure 2:
+And here is the original Figure 2:
 
-![**Figure 2.** Proportions of successful probing by each monkey of the SCNP group. All males; females did not use probes.](img/Cardoso-Ottoni-2016-Figure2.png){width=70%}
+![](img/Cardoso-Ottoni-2016-Figure2.png)
 
+I adjusted my y-axis intervals - I don't understand why the researchers used uneven intervals (0, 0.3, 0.5, 0.8, 1), and they certainly aren't to scale. Putting the two figures side-by-side, we can once again see that some values are plotted incorrectly by the authors of the original paper. I doubt that R, Excel, or other plotting software would output graphs that are not-to-scale, so I wonder if they used Photoshop or something similar to create them.
 
-My y-axis intervals aren't entirely accurate, but I can't comprehend why the original figure lists 0, 0.3, 0.5, 0.8, and 1.
+# Conclusions
+After doing this assignment, I have a few thoughts:
+
+  * The lack of statistical clarity (especially what the Mann-Whitney test was measuring) didn't significantly affect the findings, as the difference in tool use regimens was *so* extreme between the two groups. However, it was frustrating that their dataset was so reduced it became impossible to replicate most of the summary statistics, and I think that defeats the purpose of having open-access data.
+    
+  * This ambiguity also meant I spent a significant amount of time on trial-and-error attempts at replicating the statistics, which could have been easily avoided.
+    
+  * The figures from the original paper portray incorrect values and are not to scale, and I can't figure out why that is. Figure 1 does a good job of illustrating the variation in tool use by different SCNP individuals, but I don't see the purpose of Figure 2 - all it portrays is that most males succeeded in their probing events, which I don't think necessitates visual representation. (I will admit this point is rather nitpicky!)
+
+  * I know this is out of the scope of this particular paper, but I found the sexual dimorphism in level of tool use striking. *No* SCNP females succeeded in the probing task, despite the fact that the SCNP population customarily uses probing tools, and I wish the researchers explored the potential mechanisms/implications of this further.
